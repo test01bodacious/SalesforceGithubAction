@@ -35,3 +35,21 @@ jobs:
         with:
           # Authorize a Salesforce org using an SFDX auth URL
           sfdx-auth-url: ${{ secrets.E21SB01_URL }}
+
+      # Install node app for creating delta changes
+      - name: Install Node App and Create Delta Changes
+        run: |
+          sudo npm install sfdx-git-delta@latest -g
+          git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+          git fetch --all
+          git --no-pager diff --name-status e21/sb02 origin/main
+          sgd --to e21/sb02 --from origin/main --repo . --output .
+          cat package/package.xml
+
+      # Convert Source into Metadata Format (because it's 'all or none')
+      - name: Convert Metadata
+        run: sfdx force:source:convert --manifest=package/package.xml --outputdir=convert
+
+      # Convert Source into Metadata Format (because it's 'all or none')
+      - name: Validate Component Deployment
+        run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests --checkonly -w30
