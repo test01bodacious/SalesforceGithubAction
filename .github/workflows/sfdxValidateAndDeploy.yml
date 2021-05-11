@@ -1,22 +1,23 @@
-# This is a workflow to validate deployment into E21/SB01
+# This is a workflow to validate and deployment into E21/SB01
 
-name: SFDX Deploy Validation
+name: SFDX Validate and Deploy
 
 # Controls when the action will run. 
 on:
   # Triggers the workflow on pull request events but only for the main branch
   pull_request:
+    types: [ opened, synchronize, reopened, closed ]
     branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# This workflow run is made up of two jobs namely 'validate' and 'deploy' that will run sequentially
 jobs:
-  # This workflow contains a single job called "build"
-  build:
+  # This job will validate and deploy components with delta changes
+  Validate-and-Deploy:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -24,8 +25,14 @@ jobs:
       - uses: actions/checkout@v2
 
       # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Starting SFDX CLI
+      # - name: Run a one-line script
+      #   run: echo Starting SFDX CLI
+
+      # Install wget for windows
+      name: Github Action for wget
+      # You may pin to the exact commit or the version.
+      # uses: wei/wget@ca0a6b7f0fdd7ffbe9d4cec0b9696f2dc658d3c9
+      uses: wei/wget@v1.1.1
       
       # Using SFDX CLI
       - name: Salesforce SFDX CLI Action
@@ -50,6 +57,11 @@ jobs:
       - name: Convert Metadata
         run: sfdx force:source:convert --manifest=package/package.xml --outputdir=convert
 
-      # Convert Source into Metadata Format (because it's 'all or none')
+      # Validate components deployment and tests with delta changes
       - name: Validate Component Deployment
-        run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests --checkonly -w30
+        run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests --checkonly -w10
+
+      # Deploy components with delta changes
+      - name: Validate Component Deployment
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests -w10
