@@ -1,6 +1,6 @@
 # This is a workflow to validate and deployment into E21/SB01
 
-name: SFDX Validate and Deploy
+name: SFDX Validate and Deploy to E21/SB01
 
 # Controls when the action will run. 
 on:
@@ -43,6 +43,8 @@ jobs:
           sudo npm install sfdx-git-delta@latest -g
           git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
           git fetch --all
+          git branch --track e21/sb02 origin/e21/sb02
+          git checkout e21/sb02
           git --no-pager diff --name-status e21/sb02 origin/main
           sgd --to e21/sb02 --from origin/main --repo . --output .
           cat package/package.xml
@@ -53,9 +55,10 @@ jobs:
 
       # Validate components deployment and tests with delta changes
       - name: Validate Component Deployment
+        if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == false
         run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests --checkonly -w10
 
       # Deploy components with delta changes
       - name: Deploy Components
-        # if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
         run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests -w10
