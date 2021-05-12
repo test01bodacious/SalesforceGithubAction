@@ -1,0 +1,99 @@
+# This is a workflow to validate and deploy compoennt deployment into E21/SB01
+
+name: SFDX Validate & Deploy E21/SB01
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on pull request events but only for the main branch
+  pull_request:
+    types: [ opened, synchronize, reopened, closed ]
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# This workflow run is made up of two job namely 'Validate' and 'Deploy'
+jobs:
+  # This job will validate components deployment with delta changes
+  Validate:
+    # Do not run when pull request is merged
+    if: github.event.action != 'closed'
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # Runs a single command using the runners shell
+      # - name: Run a one-line script
+      #   run: echo Starting SFDX CLI
+      
+      # Using SFDX CLI
+      - name: Salesforce SFDX CLI Action
+        # You may pin to the exact commit or the version.
+        # uses: sfdx-actions/setup-sfdx@995ab395faa742df5acabb76fbdb6a5a7a5057d0
+        uses: sfdx-actions/setup-sfdx@v1
+        with:
+          # Authorize a Salesforce org using an SFDX auth URL
+          sfdx-auth-url: ${{ secrets.E21SB01_URL }}
+
+      # Install node app for creating delta changes
+      - name: Install Node App and Create Delta Changes
+        run: |
+          sudo npm install sfdx-git-delta@latest -g
+          git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+          git fetch --all
+          git branch --track e21/sb02 origin/e21/sb02
+          git checkout e21/sb02
+          git --no-pager diff --name-status e21/sb02 origin/main
+          sgd --to e21/sb02 --from origin/main --repo . --output .
+          cat package/package.xml
+
+      # Convert Source into Metadata Format (because it's 'all or none')
+      - name: Convert Metadata
+        run: sfdx force:source:convert --manifest=package/package.xml --outputdir=convert
+
+      # Validate components deployment and tests with delta changes
+      - name: Validate Component Deployment
+        run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests --checkonly -w30
+
+  # This job will deploy components with delta changes
+  Deploy:
+    # Run only when pull request is merged
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      
+      # Using SFDX CLI
+      - name: Salesforce SFDX CLI Action
+        # You may pin to the exact commit or the version.
+        # uses: sfdx-actions/setup-sfdx@995ab395faa742df5acabb76fbdb6a5a7a5057d0
+        uses: sfdx-actions/setup-sfdx@v1
+        with:
+          # Authorize a Salesforce org using an SFDX auth URL
+          sfdx-auth-url: ${{ secrets.E21SB01_URL }}
+
+      # Install node app for creating delta changes
+      - name: Install Node App and Create Delta Changes
+        run: |
+          sudo npm install sfdx-git-delta@latest -g
+          git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+          git fetch --all
+          git diff --name-status HEAD~2..HEAD
+          sgd --to HEAD --from HEAD~2 --repo . --output .
+          cat package/package.xml
+
+      # Convert Source into Metadata Format (because it's 'all or none')
+      - name: Convert Metadata
+        run: sfdx force:source:convert --manifest=package/package.xml --outputdir=convert
+
+      # Deploy components with delta changes
+      - name: Deploy Components
+        run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests -w30
