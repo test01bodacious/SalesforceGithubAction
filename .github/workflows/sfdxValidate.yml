@@ -1,21 +1,21 @@
-# This is a workflow to validate and deployment into E21/SB01
+# This is a workflow to validate compoennt deployment into E21/SB01
 
-name: SFDX Validate and Deploy to E21/SB01
+name: SFDX Validate E21/SB01
 
 # Controls when the action will run. 
 on:
   # Triggers the workflow on pull request events but only for the main branch
   pull_request:
-    types: [ opened, synchronize, reopened, closed ]
+    types: [ opened, synchronize, reopened ]
     branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# This workflow run is made up of two jobs namely 'validate' and 'deploy' that will run sequentially
+# This workflow run is made up of one job namely 'Validate'
 jobs:
-  # This job will validate and deploy components with delta changes
-  Validate-and-Deploy:
+  # This job will validate components deployment with delta changes
+  Validate:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -55,10 +55,4 @@ jobs:
 
       # Validate components deployment and tests with delta changes
       - name: Validate Component Deployment
-        if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == false
         run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests --checkonly -w10
-
-      # Deploy components with delta changes
-      - name: Deploy Components
-        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
-        run: sfdx force:mdapi:deploy --deploydir=convert --testlevel=RunLocalTests -w10
