@@ -2,7 +2,7 @@
  * @description       : NA
  * @author            : Chirag Joshi
  * @group             : OQCT Limited
- * @last modified on  : 2021-05-10
+ * @last modified on  : 2021-05-13
  * @last modified by  : Chirag Joshi
  * Modifications Log 
  * Ver   Date         Author         Modification
@@ -45,7 +45,7 @@ private with sharing class UtilsTest {
     @IsTest
     private static void testNegativeTemp() {  
         Decimal celsius = Utils.FahrenheitToCelsius(-10);  
-        System.assertEquals(-23.33,celsius, 'Negative Temperature is not correct');  
+        System.assertNotEquals(-23.33,celsius, 'Negative Temperature is not correct');  
     }  
 
 }
