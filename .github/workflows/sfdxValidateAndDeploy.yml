@@ -51,6 +51,10 @@ jobs:
           sgd --to e21/sb02 --from origin/main --repo . --output .
           cat package/package.xml
 
+      # Code Security and Quality check by PMD Static Code Analyzer
+      - name: run-pmd
+        run: pmd -d $GITHUB_WORKSPACE/force-app/main/default/classes/ -R category/apex/design.xml -l apex -f text
+
       # Convert Source into Metadata Format (because it's 'all or none')
       - name: Convert Metadata
         run: sfdx force:source:convert --manifest=package/package.xml --outputdir=convert

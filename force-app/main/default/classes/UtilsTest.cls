@@ -45,7 +45,7 @@ private with sharing class UtilsTest {
     @IsTest
     private static void testNegativeTemp() {  
         Decimal celsius = Utils.FahrenheitToCelsius(-10);  
-        System.assertNotEquals(-23.33,celsius, 'Negative Temperature is not correct');  
+        System.assertEquals(-23.33,celsius, 'Negative Temperature is not correct');  
     }  
 
 }
