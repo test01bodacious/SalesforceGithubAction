@@ -40,7 +40,7 @@ jobs:
           sfdx-auth-url: ${{ secrets.E21SB01_URL }}
 
       # Install node app for creating delta changes
-      - name: Install Node App and Create Delta Changes
+      - name: Install Node App and Create Delta Changes and Run PMD Check
         run: |
           sudo npm install sfdx-git-delta@latest -g
           git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
@@ -50,6 +50,11 @@ jobs:
           git --no-pager diff --name-status e21/sb02 origin/main
           sgd --to e21/sb02 --from origin/main --repo . --output .
           cat package/package.xml
+
+      # Run PMD
+      - name: Run PMD
+        uses: sfdx-actions/setup-pmd@v1
+        run: pmd -d ./force-app/main/default/classes -R category/apex/design.xml -f text
 
       # Convert Source into Metadata Format (because it's 'all or none')
       - name: Convert Metadata
