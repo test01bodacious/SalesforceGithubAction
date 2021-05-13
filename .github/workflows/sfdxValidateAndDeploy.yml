@@ -86,8 +86,6 @@ jobs:
           sudo npm install sfdx-git-delta@latest -g
           git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
           git fetch --all
-          git branch --track e21/sb02 origin/e21/sb02
-          git checkout e21/sb02
           git diff --name-status HEAD~1..HEAD
           sgd --to HEAD --from HEAD~1 --repo . --output .
           cat package/package.xml
