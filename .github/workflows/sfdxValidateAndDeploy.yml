@@ -39,27 +39,23 @@ jobs:
           # Authorize a Salesforce org using an SFDX auth URL
           sfdx-auth-url: ${{ secrets.E21SB01_URL }}
 
+      # Github Context Variables
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       # Install node app for creating delta changes
       - name: Install Node App and Create Delta Changes
         run: |
           sudo npm install sfdx-git-delta@latest -g
           git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
           git fetch --all
-          git branch --track e21/sb02 origin/e21/sb02
-          git checkout e21/sb02
-          git --no-pager diff --name-status e21/sb02 origin/main
-          sgd --to e21/sb02 --from origin/main --repo . --output .
+          git branch --track ${{ github.head_ref }} origin/${{ github.head_ref }}
+          git checkout ${{ github.head_ref }}
+          git --no-pager diff --name-status ${{ github.head_ref }} origin/${{ github.base_ref }}
+          sgd --to ${{ github.head_ref }} --from origin/${{ github.base_ref }} --repo . --output .
           cat package/package.xml
-
-      # Setup PMD
-      - name: Setup PMD
-        uses: sfdx-actions/setup-pmd@v1
-      
-      # Run PMD
-      - name: Run PMD
-        run: |
-          pmd -d ./force-app/main/default/classes -R category/apex/design.xml -f text -reportfile ./PMDoutput.txt
-          cat ./PMDoutput.txt
 
       # Convert Source into Metadata Format (because it's 'all or none')
       - name: Convert Metadata
