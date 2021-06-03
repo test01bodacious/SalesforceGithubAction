@@ -8,5 +8,9 @@
 		<members>*</members>
 		<name>ApexPage</name>
 	</types>
+	<types>
+		<members>Demo__c.Demo_Text_2__c</members>
+		<name>CustomField</name>
+	</types>
 	<version>51.0</version>
 </Package>
